@@ -19,8 +19,11 @@ package controller
 
 import (
 	"context"
+
 	// opencontrolplane-gen:if SAMPLECODE=true
+	"fmt"
 	"time"
+
 	// opencontrolplane-gen:fi
 	// opencontrolplane-gen:if SECRETWATCHER=true
 	corev1 "k8s.io/api/core/v1"
@@ -29,7 +32,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	// opencontrolplane-gen:if SAMPLECODE=true
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	meta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -92,6 +98,34 @@ func (r *FooReconciler) Delete(ctx context.Context, obj *apiv1alpha1.Foo, _ *api
 	l := logf.FromContext(ctx)
 	serviceprovider.StatusTerminating(obj)
 	managedObj := fooCRD()
+	// Check if no custom resource objects related to the managed domain service CRD remain on a ControlPlane before deleting the service provider
+	fooList := &unstructured.UnstructuredList{}
+	fooList.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   managedObj.Spec.Group,
+		Version: managedObj.Spec.Versions[0].Name,
+		Kind:    managedObj.Spec.Names.ListKind,
+	})
+	if err := clusters.MCPCluster.Client().List(ctx, fooList); err != nil {
+		if !meta.IsNoMatchError(err) {
+			l.Error(err, "list Foo resources failed")
+			return ctrl.Result{}, err
+		}
+	}
+	if len(fooList.Items) != 0 {
+		meta.SetStatusCondition(obj.GetConditions(), metav1.Condition{
+			Type:               "DeletionBlocked",
+			Status:             metav1.ConditionTrue,
+			ObservedGeneration: obj.GetGeneration(),
+			Reason:             "UserResourcesPresent",
+			Message:            fmt.Sprintf("user resources still present, kind %s: %d", managedObj.Spec.Names.Kind, len(fooList.Items)),
+		})
+		obj.SetObservedGeneration(obj.GetGeneration())
+		obj.SetPhase("Terminating")
+
+		return ctrl.Result{
+			RequeueAfter: time.Second * 10,
+		}, nil
+	}
 	if err := clusters.MCPCluster.Client().Delete(ctx, managedObj); client.IgnoreNotFound(err) != nil {
 		l.Error(err, "delete object failed")
 		return ctrl.Result{}, err
