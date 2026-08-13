@@ -1,3 +1,4 @@
+//go:generate opencontrolplane-gen
 package e2e
 
 import (
@@ -39,8 +40,10 @@ func TestMain(m *testing.M) {
 		},
 		ServiceProviders: []providers.ServiceProviderSetup{
 			{
-				Name:               "foo",
-				Image:              fmt.Sprintf("ghcr.io/openmcp-project/images/service-provider-foo:%s", version),
+				// opencontrolplane-gen:replace foo=KIND_LOWER
+				Name: "foo",
+				// opencontrolplane-gen:replace template=PROVIDER_NAME
+				Image:              fmt.Sprintf("ghcr.io/openmcp-project/images/service-provider-template:%s", version),
 				LoadImageToCluster: true,
 			},
 		},

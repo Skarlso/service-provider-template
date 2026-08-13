@@ -3,17 +3,17 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.1
   labels:
     openmcp.cloud/cluster: onboarding
-  name: {{.KindLower}}s.{{.Group}}.{{.GroupSuffix}}
+  name: foos.foo.services.open-control-plane.io
 spec:
-  group: {{.Group}}.{{.GroupSuffix}}
+  group: foo.services.open-control-plane.io
   names:
-    kind: {{.Kind}}
-    listKind: {{.Kind}}List
-    plural: {{.KindLower}}s
-    singular: {{.KindLower}}
+    kind: Foo
+    listKind: FooList
+    plural: foos
+    singular: foo
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -26,7 +26,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: {{.Kind}} is the Schema for the {{.KindLower}}s API
+        description: |-
+          opencontrolplane-gen:replace Foo=KIND foo=KIND_LOWER
+          Foo is the Schema for the foos API
+          opencontrolplane-gen:replace Foo=KIND
         properties:
           apiVersion:
             description: |-
@@ -46,27 +49,26 @@ spec:
           metadata:
             type: object
           spec:
-            description: spec defines the desired state of {{.Kind}}
+            description: |-
+              opencontrolplane-gen:replace Foo=KIND
+              spec defines the desired state of Foo
+              opencontrolplane-gen:replace Foo=KIND
             properties:
               foo:
-                description: foo is an example field of {{.Kind}}. Edit {{.KindLower}}_types.go
-                  to remove/update
+                description: |-
+                  opencontrolplane-gen:replace Foo=KIND
+                  foo is an example field of Foo. Edit api_types.go to remove/update
+                  opencontrolplane-gen:replace Foo=KIND
                 type: string
             type: object
           status:
-            description: status defines the observed state of {{.Kind}}
+            description: |-
+              opencontrolplane-gen:replace Foo=KIND
+              status defines the observed state of Foo
+              opencontrolplane-gen:replace Foo=KIND
             properties:
               conditions:
-                description: |-
-                  conditions represent the current state of the {{.Kind}} resource.
-                  Each condition has a unique type and reflects the status of a specific aspect of the resource.
-
-                  Standard condition types include:
-                  - "Available": the resource is fully functional
-                  - "Progressing": the resource is being created or updated
-                  - "Degraded": the resource failed to reach or maintain its desired state
-
-                  The status of each condition is one of True, False, or Unknown.
+                description: Conditions contains the conditions.
                 items:
                   description: Condition contains details for one aspect of the current
                     state of this API Resource.

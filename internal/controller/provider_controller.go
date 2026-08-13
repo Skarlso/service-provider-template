@@ -14,44 +14,54 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//go:generate opencontrolplane-gen
 package controller
 
 import (
 	"context"
+	// opencontrolplane-gen:if SAMPLECODE=true
 	"time"
-
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-
-	{{- if .WithSecretWatcher }}
+	// opencontrolplane-gen:fi
+	// opencontrolplane-gen:if SECRETWATCHER=true
 	corev1 "k8s.io/api/core/v1"
-	{{- end }}
+	// opencontrolplane-gen:fi
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	// opencontrolplane-gen:if SAMPLECODE=true
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	// opencontrolplane-gen:fi
 	"github.com/openmcp-project/controller-utils/pkg/clusters"
+	// opencontrolplane-gen:if SAMPLECODE=true
 	"github.com/openmcp-project/opencontrolplane-runtime/pkg/serviceprovider"
+	// opencontrolplane-gen:fi
 	clusteraccess "github.com/openmcp-project/opencontrolplane-runtime/pkg/serviceprovider/clusteraccess"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	// opencontrolplane-gen:replace github.com/openmcp-project/service-provider-template=MODULE
 	apiv1alpha1 "github.com/openmcp-project/service-provider-template/api/v1alpha1"
 )
 
-// {{.Kind}}Reconciler reconciles a {{.Kind}} object
-type {{.Kind}}Reconciler struct {
-	// OnboardingCluster is the cluster where this controller watches {{.Kind}} resources and reacts to their changes.
+// opencontrolplane-gen:replace Foo=KIND
+// FooReconciler reconciles a Foo object
+// opencontrolplane-gen:replace Foo=KIND
+type FooReconciler struct {
+	// opencontrolplane-gen:replace Foo=KIND
+	// OnboardingCluster is the cluster where this controller watches Foo resources and reacts to their changes.
 	OnboardingCluster *clusters.Cluster
 	// PlatformCluster is the cluster where this controller is deployed and configured.
-	PlatformCluster   *clusters.Cluster
+	PlatformCluster *clusters.Cluster
 	// PodNamespace is the namespace where this controller is deployed in.
 	PodNamespace string
 }
 
 // CreateOrUpdate is called on every add or update event
-func (r *{{.Kind}}Reconciler) CreateOrUpdate(ctx context.Context, svcobj *apiv1alpha1.{{.Kind}}, _ *apiv1alpha1.ProviderConfig, clusters clusteraccess.ClusterContext) (ctrl.Result, error) {
-{{- if .WithExample }}
+// opencontrolplane-gen:replace Foo=KIND
+func (r *FooReconciler) CreateOrUpdate(ctx context.Context, svcobj *apiv1alpha1.Foo, _ *apiv1alpha1.ProviderConfig, clusters clusteraccess.ClusterContext) (ctrl.Result, error) {
+	// opencontrolplane-gen:if SAMPLECODE=true
 	l := logf.FromContext(ctx)
 	serviceprovider.StatusProgressing(svcobj, "Reconciling", "Reconcile in progress")
 	managedObj := &apiextensionsv1.CustomResourceDefinition{
@@ -67,15 +77,18 @@ func (r *{{.Kind}}Reconciler) CreateOrUpdate(ctx context.Context, svcobj *apiv1a
 		return ctrl.Result{}, err
 	}
 	serviceprovider.StatusReady(svcobj)
-{{- else }}
+	// opencontrolplane-gen:fi
+	// opencontrolplane-gen:if SAMPLECODE=false
 	// TODO
-{{- end }}
+	_, _, _ = ctx, svcobj, clusters
+	// opencontrolplane-gen:fi
 	return ctrl.Result{}, nil
 }
 
 // Delete is called on every delete event
-func (r *{{.Kind}}Reconciler) Delete(ctx context.Context, obj *apiv1alpha1.{{.Kind}}, _ *apiv1alpha1.ProviderConfig, clusters clusteraccess.ClusterContext) (ctrl.Result, error) {
-{{- if .WithExample }}
+// opencontrolplane-gen:replace Foo=KIND
+func (r *FooReconciler) Delete(ctx context.Context, obj *apiv1alpha1.Foo, _ *apiv1alpha1.ProviderConfig, clusters clusteraccess.ClusterContext) (ctrl.Result, error) {
+	// opencontrolplane-gen:if SAMPLECODE=true
 	l := logf.FromContext(ctx)
 	serviceprovider.StatusTerminating(obj)
 	managedObj := fooCRD()
@@ -87,21 +100,25 @@ func (r *{{.Kind}}Reconciler) Delete(ctx context.Context, obj *apiv1alpha1.{{.Ki
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 	// object still exists
-	return ctrl.Result{
-		RequeueAfter: time.Second * 10,
-	}, nil
-{{- else }}
+	// opencontrolplane-gen:fi
+	// opencontrolplane-gen:if SAMPLECODE=false
 	// TODO
-	return ctrl.Result{}, nil
-{{- end }}
+	_, _, _ = ctx, obj, clusters
+	// opencontrolplane-gen:fi
+	return ctrl.Result{
+		// opencontrolplane-gen:if SAMPLECODE=true
+		RequeueAfter: time.Second * 10,
+		// opencontrolplane-gen:fi
+	}, nil
 }
 
-{{- if .WithSecretWatcher }}
+// opencontrolplane-gen:if SECRETWATCHER=true
 // IsReferencedSecret returns true if the given secret should trigger
 // reconciliation. See serviceprovider.SecretWatcher for details.
 //
-//revive:disable:unused-parameter
-func (r *{{.Kind}}Reconciler) IsReferencedSecret(ctx context.Context, secret *corev1.Secret, pc *apiv1alpha1.ProviderConfig) bool {
+// revive:disable:unused-parameter
+// opencontrolplane-gen:replace Foo=KIND
+func (r *FooReconciler) IsReferencedSecret(ctx context.Context, secret *corev1.Secret, pc *apiv1alpha1.ProviderConfig) bool {
 	if pc == nil {
 		return false
 	}
@@ -113,8 +130,9 @@ func (r *{{.Kind}}Reconciler) IsReferencedSecret(ctx context.Context, secret *co
 	// }
 	return false
 }
-{{- end }}
-{{ if .WithExample }}
+
+// opencontrolplane-gen:fi
+// opencontrolplane-gen:if SAMPLECODE=true
 func fooCRD() *apiextensionsv1.CustomResourceDefinition {
 	return &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
@@ -152,4 +170,5 @@ func fooCRD() *apiextensionsv1.CustomResourceDefinition {
 		},
 	}
 }
-{{- end }}
+
+// opencontrolplane-gen:fi
